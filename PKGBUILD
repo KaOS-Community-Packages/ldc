@@ -1,29 +1,27 @@
-pkgname=('ldc' 'liblphobos')
-groups=('dlang' 'dlang-ldc')
+pkgname=('ldc')
 pkgver=1.20.1
 _pkgcommit=96437a25c28a2a6fbeb36dc6a46b600e56021051
 _dversion=2.090.1
 _clangversion=9.0.1 # related to where ldc2 looks for compiler-rt sanitizers
-epoch=2
 pkgrel=1
 pkgdesc="A D Compiler based on the LLVM Compiler Infrastructure including D runtime and libphobos2"
 arch=('x86_64')
 url="https://github.com/ldc-developers/ldc"
+backup=('etc/ldc2.conf')
+depends=('dmd' 'gcc' 'clang' 'llvm')
+makedepends=('git' 'cmake')
 license=('BSD')
-makedepends=('git' 'cmake' 'llvm')
-
+options=('staticlibs')
 source=(
     "git+https://github.com/ldc-developers/ldc#commit=$_pkgcommit"
     "git+https://github.com/ldc-developers/druntime.git"
     "git+https://github.com/ldc-developers/phobos.git"
     "git+https://github.com/ldc-developers/dmd-testsuite.git"
 )
-
 sha256sums=('SKIP'
             'SKIP'
             'SKIP'
             'SKIP')
-
 prepare() {
     cd "$srcdir/ldc"
 
@@ -36,7 +34,6 @@ prepare() {
     # Set version used for path construction in getFullClangCompilerRTLibPath()
     sed -i "s/ldc::llvm_version_base/\"$_clangversion\"/" driver/linker-gcc.cpp
 }
-
 build() {
     cd "$srcdir/ldc"
 
@@ -54,17 +51,11 @@ build() {
     ..
     make
 }
-
 check() {
     cd "$srcdir/ldc/build"
     make all-test-runners
 }
-
-package_ldc() {
-    depends=('liblphobos' 'llvm' 'gcc' 'clang')
-    backup=('etc/ldc2.conf')
-    provides=("d-compiler=$_dversion")
-
+package() {
     cd "$srcdir/ldc/build"
     make install DESTDIR="$pkgdir"
 
@@ -73,26 +64,14 @@ package_ldc() {
     mv "$srcdir/ldc/packaging/bash_completion.d/ldc2" "$pkgdir/usr/share/bash-completion/completions/"
     rm -rf "$pkgdir/etc/bash_completion.d"
 
-    # remove liblphobos files
-    rm -rf "$pkgdir/usr/include"
-    rm -rf "$pkgdir/usr/lib"
-
     # symlinks
     ln -s /usr/share/bash-completion/completions/ldc2 "$pkgdir/usr/share/bash-completion/completions/ldc"
     ln -s /usr/bin/ldc2 "$pkgdir/usr/bin/ldc"
     ln -s /usr/bin/ldmd2 "$pkgdir/usr/bin/ldmd"
 
-    # licenses
-    install -D -m644 "$srcdir/ldc/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-}
-
-package_liblphobos() {
-    provides=('d-runtime' 'd-stdlib')
-    depends=('curl')
-    options=('staticlibs')
-
-    cd "$srcdir/ldc/build"
-    make install DESTDIR="$pkgdir"
+    # remove liblphobos files
+    rm -rf "$pkgdir/usr/include"
+    rm -rf "$pkgdir/usr/lib"
 
     # remove ldc files
     rm -rf "$pkgdir/usr/bin/"
